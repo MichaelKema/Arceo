@@ -55,11 +55,11 @@ The `.gitignore` excludes build output, local release files, environment files, 
 
 ## Create the download release
 
-The workflow `.github/workflows/release.yml` runs when you push a version tag. Keep `package.json`, `src-tauri/tauri.conf.json`, and `src-tauri/Cargo.toml` at the same version. The first release uses `0.1.0`:
+The workflow `.github/workflows/release.yml` runs when you push a version tag. Keep `package.json`, `src-tauri/tauri.conf.json`, and `src-tauri/Cargo.toml` at the same version. The current release uses `0.1.1`:
 
 ```sh
-git tag -a v0.1.0 -m "Arceo 0.1.0"
-git push origin v0.1.0
+git tag -a v0.1.1 -m "Arceo 0.1.1"
+git push origin v0.1.1
 ```
 
 GitHub Actions checks the version, runs tests and builds a universal macOS `.dmg` and a Windows x64 `-setup.exe` on their respective operating systems. Once both finish, it creates a **draft** release containing both installers and `SHA256SUMS.txt`. It uses GitHub's automatic repository token; no personal access token is needed in the workflow. Check **Actions** for progress, then open **Releases**, review the draft, test the installers, and publish it when ready. The release notes disclose the current development signing status.
@@ -69,7 +69,7 @@ The ordinary `build.yml` workflow also produces downloadable installer artifacts
 To attach an existing local installer to a draft release manually:
 
 ```sh
-gh release create v0.1.0 --verify-tag --draft --title "Arceo v0.1.0" --notes-file docs/release-notes.md release-assets/*.dmg release-assets/SHA256SUMS.txt
+gh release create v0.1.1 --verify-tag --draft --title "Arceo v0.1.1" --notes-file docs/release-notes.md release-assets/*.dmg release-assets/SHA256SUMS.txt
 ```
 
 Use either the automated workflow or manual creation for a given tag, not both. Copy the installer into `release-assets/` and run `npm run release:checksums` before manual upload. On macOS, verify its checksum from that directory with `shasum -a 256 -c SHA256SUMS.txt`.

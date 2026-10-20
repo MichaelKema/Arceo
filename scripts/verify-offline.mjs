@@ -1,6 +1,7 @@
 import { readFile, access } from "node:fs/promises";
 import path from "node:path";
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 
 // Audit the shipped asset graph: a clean installation must not rely on a
 // browser cache, dev server, CDN, remotely hosted font, or online bootstrapper.
@@ -56,6 +57,57 @@ assert.equal(
   "connect-src ipc: http://ipc.localhost",
   "Release may connect only to native IPC",
 );
+const extension = JSON.parse(
+  await readFile("browser-extension/manifest.json", "utf8"),
+);
+assert.equal(extension.version, config.version);
+assert.deepEqual(extension.permissions.slice().sort(), [
+  "declarativeNetRequest",
+  "nativeMessaging",
+  "tabs",
+]);
+assert.equal(
+  extension.host_permissions,
+  undefined,
+  "Browser protection must not request page contents",
+);
+assert(
+  extension.content_security_policy.extension_pages.includes(
+    "connect-src 'none'",
+  ),
+);
+const identity = createHash("sha256")
+  .update(Buffer.from(extension.key, "base64"))
+  .digest("hex")
+  .slice(0, 32)
+  .split("")
+  .map((n) => String.fromCharCode(97 + parseInt(n, 16)))
+  .join("");
+assert.equal(
+  identity,
+  (await readFile("browser-extension/extension-id.txt", "utf8")).trim(),
+);
+const embedding = await readFile("src-tauri/src/browser.rs", "utf8");
+for (const file of [
+  "manifest.json",
+  "background.js",
+  "policy.js",
+  "blocked.html",
+  "blocked.js",
+  "style.css",
+  "popup.html",
+  "popup.js",
+]) {
+  const contents = await readFile(`browser-extension/${file}`, "utf8");
+  assert(
+    embedding.includes(`browser-extension/${file}`),
+    `Browser asset must be embedded: ${file}`,
+  );
+  assert(
+    !/\b(?:fetch|XMLHttpRequest|WebSocket|sendBeacon)\s*\(/.test(contents),
+    `Browser asset must not use network APIs: ${file}`,
+  );
+}
 console.log(
-  `Offline bundle verified: ${visited.size} local assets, local-only IPC, offline Windows runtime installer.`,
+  `Offline bundle verified: ${visited.size} local assets, local-only IPC, embedded browser companion, offline Windows runtime installer.`,
 );

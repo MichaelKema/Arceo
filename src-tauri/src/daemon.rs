@@ -247,7 +247,7 @@ fn mac_launch_command(exe: &Path, dir: &Path) -> String {
     format!(
         "engine_log=$(/usr/bin/mktemp /var/tmp/arceo-engine.XXXXXX) || exit 1; \
          {} --blocker-daemon {} </dev/null >\"$engine_log\" 2>&1 & \
-         engine_pid=$!; /bin/sleep 0.3; \
+         engine_pid=$!; /bin/sleep 1; \
          if /bin/kill -0 \"$engine_pid\" 2>/dev/null; then \
          /bin/rm -f \"$engine_log\"; else \
          /bin/cat \"$engine_log\"; /bin/rm -f \"$engine_log\"; exit 1; fi",
@@ -362,7 +362,13 @@ mod launch_tests {
             String::from_utf8_lossy(&output.stderr)
         );
         let pid: i32 = fs::read_to_string(dir.join("started.pid"))
-            .unwrap()
+            .unwrap_or_else(|error| {
+                panic!(
+                    "Fixture did not start: {error}; command={command}; stdout={}; stderr={}",
+                    String::from_utf8_lossy(&output.stdout),
+                    String::from_utf8_lossy(&output.stderr)
+                )
+            })
             .parse()
             .unwrap();
         let alive = unsafe { libc::kill(pid, 0) } == 0;
@@ -391,7 +397,14 @@ mod launch_tests {
             .args(["-c", &mac_launch_command(&helper, &dir)])
             .output()
             .unwrap();
-        assert!(!output.status.success());
+        assert!(
+            !output.status.success(),
+            "Unexpected launcher success: {}; stdout={}; stderr={}; helper={}",
+            mac_launch_command(&helper, &dir),
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr),
+            fs::read_to_string(&helper).unwrap()
+        );
         assert!(String::from_utf8_lossy(&output.stdout).contains("simulated startup failure"));
     }
 }
