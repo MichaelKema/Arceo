@@ -2,10 +2,18 @@ name: Build offline installers and draft a release
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing version tag to package
+        required: true
+        type: string
+env:
+  RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
 permissions:
   contents: read
 concurrency:
-  group: release-${{ github.ref }}
+  group: release-${{ inputs.tag || github.ref_name }}
   cancel-in-progress: false
 jobs:
   installers:
@@ -24,6 +32,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -44,7 +54,7 @@ jobs:
           const pkg = JSON.parse(readFileSync('package.json'));
           const tauri = JSON.parse(readFileSync('src-tauri/tauri.conf.json'));
           const cargo = readFileSync('src-tauri/Cargo.toml', 'utf8').match(/^version = "([^"]+)"/m)?.[1];
-          if (process.env.GITHUB_REF_NAME !== `v${pkg.version}` || tauri.version !== pkg.version || cargo !== pkg.version) {
+          if (process.env.RELEASE_TAG !== `v${pkg.version}` || tauri.version !== pkg.version || cargo !== pkg.version) {
             throw new Error('Tag and package.json, tauri.conf.json, Cargo.toml versions must agree.');
           }
           JS
@@ -78,6 +88,8 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -95,7 +107,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          gh release create "$GITHUB_REF_NAME" \
-            --verify-tag --draft --title "Arceo $GITHUB_REF_NAME" \
+          gh release create "$RELEASE_TAG" \
+            --verify-tag --draft --title "Arceo $RELEASE_TAG" \
             --notes-file docs/release-notes.md \
             release-assets/*.dmg release-assets/*.exe release-assets/SHA256SUMS.txt

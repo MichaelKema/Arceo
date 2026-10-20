@@ -64,6 +64,8 @@ git push origin v0.1.1
 
 GitHub Actions checks the version, runs tests and builds a universal macOS `.dmg` and a Windows x64 `-setup.exe` on their respective operating systems. Once both finish, it creates a **draft** release containing both installers and `SHA256SUMS.txt`. It uses GitHub's automatic repository token; no personal access token is needed in the workflow. Check **Actions** for progress, then open **Releases**, review the draft, test the installers, and publish it when ready. The release notes disclose the current development signing status.
 
+If the tagged commit contains a `[skip ci]` marker, GitHub skips the automatic push workflow. You can build the same existing tag manually in **Actions → Build offline installers and draft a release → Run workflow**, selecting `main` as the workflow branch and entering the version tag. The workflow checks out and packages that exact tag. From the terminal, use `gh workflow run release.yml --ref main -f tag=v0.1.1`.
+
 The ordinary `build.yml` workflow also produces downloadable installer artifacts for `main` pushes and pull requests. Draft releases and Actions artifacts are for review; published GitHub Releases are the stable place to send users for downloads.
 
 To attach an existing local installer to a draft release manually:
