@@ -2,6 +2,12 @@
 
 A calmer space for your best work. A Rust-powered website and desktop app blocker for macOS and Windows, with a black workspace and colorful accents inspired by the supplied [Arc CRM reference](https://uiarc.dev/templates/arc-crm/live).
 
+## Download and install
+
+Download the installers from [GitHub Releases](https://github.com/MichaelKema/Arceo/releases). On macOS, open the universal `.dmg` and drag Arceo into Applications; it supports Apple Silicon and Intel Macs. On Windows, run the x64 `-setup.exe`, which includes the offline WebView2 runtime installer. After downloading or transferring the installer by USB, installation and use need no internet, Node.js, Rust, or development server.
+
+Current prereleases are development builds without publisher signing or macOS notarization, so the operating system may warn about or block them. Clean-machine installation testing is still required. See the release notes for build details and `SHA256SUMS.txt` for download checksums.
+
 ## Run it
 
 Install a current stable Rust toolchain, Node.js 24 or later, and the [Tauri desktop prerequisites](https://v2.tauri.app/start/prerequisites/) for your OS (Xcode Command Line Tools on macOS; Visual Studio C++ Build Tools and WebView2 on Windows).
