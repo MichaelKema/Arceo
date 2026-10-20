@@ -484,6 +484,20 @@ export default function App() {
                 </button>
               </div>
             )}
+          {native &&
+            data.platform === "windows" &&
+            (!data.browser?.connected || data.browser.error) && (
+              <div className="error-banner">
+                <Globe size={16} />
+                <span>
+                  {data.browser?.error ||
+                    "Using Chrome or Edge? Set up browser protection to cover cached pages, existing connections, and secure DNS."}
+                </span>
+                <button onClick={() => go("Settings")}>
+                  Set up browser protection <ArrowRight size={13} />
+                </button>
+              </div>
+            )}
           {data.runtime.error && (
             <div className="error-banner">
               <AlertCircle size={16} />
@@ -1349,6 +1363,72 @@ export default function App() {
                     <ArrowRight size={13} />
                   </button>
                 )}
+                {native && (
+                  <div className="settings-callout">
+                    <Globe size={21} />
+                    <div>
+                      <strong>
+                        Chrome &amp; Edge protection ·{" "}
+                        {data.browser?.connected && !data.browser.error
+                          ? "Connected"
+                          : "Setup needed"}
+                      </strong>
+                      <p>
+                        Blocks selected sites inside your browser, including
+                        existing connections and subdomains. An offline focus
+                        page replaces already-open blocked tabs. Tab addresses
+                        stay inside the browser; no browsing history or page
+                        content is sent to Arceo.
+                      </p>
+                      <button
+                        className="button primary"
+                        disabled={busy}
+                        onClick={() =>
+                          void action(async () => {
+                            await invoke("prepare_browser_protection");
+                            await refresh();
+                            notify(
+                              "Local browser connection prepared. Load the Arceo extension in Chrome or Edge to finish setup.",
+                            );
+                          })
+                        }
+                      >
+                        Prepare browser protection
+                      </button>
+                      {data.browser?.prepared && (
+                        <>
+                          <ol>
+                            <li>
+                              Open <code>chrome://extensions</code> or{" "}
+                              <code>edge://extensions</code>.
+                            </li>
+                            <li>
+                              Turn on Developer mode, select Load unpacked, then
+                              choose this folder:
+                            </li>
+                          </ol>
+                          <input
+                            aria-label="Browser extension folder"
+                            readOnly
+                            value={data.browser.extension_path}
+                            onFocus={(event) => event.currentTarget.select()}
+                            style={{ width: "100%" }}
+                          />
+                          <p>
+                            Install in each browser profile you use. Enable
+                            “Allow in incognito” in the extension’s details if
+                            you want to block private windows too. Setup uses
+                            files bundled with this app; internet is not
+                            required.
+                          </p>
+                        </>
+                      )}
+                      {data.browser?.error && (
+                        <p role="alert">{data.browser.error}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
                 {native && data.platform === "macos" && (
                   <div className="settings-callout">
                     <Globe size={21} />
@@ -1650,6 +1730,28 @@ export default function App() {
               </p>
             </div>
           )}
+          {native &&
+            data.platform === "windows" &&
+            !data.browser?.connected && (
+              <div className="inline-note">
+                <Globe size={16} />
+                <div>
+                  <p>
+                    Chrome and Edge can reuse existing connections. Set up
+                    browser protection to cover those tabs during this session.
+                  </p>
+                  <button
+                    className="text-button"
+                    onClick={() => {
+                      setStartModal(false);
+                      go("Settings");
+                    }}
+                  >
+                    Set up browser protection <ArrowRight size={13} />
+                  </button>
+                </div>
+              </div>
+            )}
           {startError && (
             <div className="form-error" role="alert">
               <AlertCircle size={16} />
@@ -1659,7 +1761,7 @@ export default function App() {
           {busy && (
             <p className="startup-status" role="status">
               {native
-                ? "Starting the local blocking engine. Complete your macOS or Windows permission prompt if it appears."
+                ? "Starting the local blocking engine and confirming your rules. Complete your macOS or Windows permission prompt if it appears."
                 : "Starting your timer…"}
             </p>
           )}

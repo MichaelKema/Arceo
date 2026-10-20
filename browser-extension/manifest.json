@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "Arceo browser protection",
+  "description": "Apply your offline Arceo focus timers and schedules inside Chrome and Edge.",
+  "version": "0.1.1",
+  "minimum_chrome_version": "105",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA3v1sO1nOpcLJWjq5H6BqehGtiMjbe+NXsZCM6F73ZL795NR+b2q0Neha0am8o90LS0/xyZYtEwN30OHFpykzcX/GizRFR+djfN84nZlWCBQ3KEV2/4++cwkwpg0L5k1kSmYglqieiMcxHnsXjsotORrpy1n1mO7o1+sp89lRH/SBB/3uAIPLRpf6g3CL2MWwT95F/TqKTf3fptSXx0y2mU37jZRgaKHkYIZzB79uaazu9Ir3wKBKRuWc3liPEMdaxeriNvDdMfFad5DhqFTA36ByUeRbYI3SRLNmmPONrbckWW/weGsk9MUVslLRx633HBXuXem+Jgb+uB9MRwdXEQIDAQAB",
+  "permissions": ["nativeMessaging", "declarativeNetRequest", "tabs"],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'none'; connect-src 'none'"
+  }
+}

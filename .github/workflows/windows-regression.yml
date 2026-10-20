@@ -22,3 +22,6 @@ jobs:
       - run: cargo build --manifest-path src-tauri/Cargo.toml --release --locked --target x86_64-pc-windows-msvc
       - name: Verify actual Windows resolver and fresh and already-open Chrome
         run: node scripts/verify-windows-blocking.mjs src-tauri/target/x86_64-pc-windows-msvc/release/arceo.exe
+      - run: npx playwright install --no-shell chromium
+      - name: Verify Chrome companion with real native messaging and local pages
+        run: node scripts/verify-browser-protection.mjs src-tauri/target/x86_64-pc-windows-msvc/release/arceo.exe

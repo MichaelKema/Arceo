@@ -1,3 +1,4 @@
+pub mod browser;
 pub mod daemon;
 mod hosts;
 mod model;
@@ -20,6 +21,7 @@ struct Snapshot {
     runtime: Runtime,
     platform: String,
     safari: safari::Status,
+    browser: browser::Status,
 }
 #[tauri::command]
 fn get_snapshot(store: State<Store>) -> Result<Snapshot, String> {
@@ -34,6 +36,7 @@ fn get_snapshot(store: State<Store>) -> Result<Snapshot, String> {
         runtime: storage::read_runtime(&store.dir),
         platform: std::env::consts::OS.into(),
         safari: store.safari.status(),
+        browser: browser::status(&store.dir),
     })
 }
 #[tauri::command]
@@ -139,6 +142,13 @@ async fn disable_engine(store: State<'_, Store>) -> Result<(), String> {
         }
     }
     Ok(())
+}
+#[tauri::command]
+async fn prepare_browser_protection(store: State<'_, Store>) -> Result<browser::Status, String> {
+    let dir = store.dir.clone();
+    tauri::async_runtime::spawn_blocking(move || browser::prepare(&dir))
+        .await
+        .map_err(|e| e.to_string())?
 }
 #[tauri::command]
 async fn set_safari_protection(enabled: bool, store: State<'_, Store>) -> Result<(), String> {
@@ -392,6 +402,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             get_snapshot,
+            prepare_browser_protection,
             set_safari_protection,
             save_config,
             enable_engine,
@@ -435,6 +446,31 @@ pub fn run() {
 #[cfg(test)]
 mod startup_tests {
     use super::*;
+    #[test]
+    fn running_helper_is_not_confirmation_of_new_session_rules() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut runtime = Runtime {
+            online: true,
+            heartbeat: chrono::Utc::now().timestamp(),
+            applied_session_id: Some("older-session".into()),
+            ..Runtime::default()
+        };
+        storage::atomic_write(&dir.path().join("runtime.json"), &runtime).unwrap();
+        assert!(wait_for_session(dir.path(), "new-session", std::time::Duration::ZERO).is_err());
+        runtime.applied_session_id = Some("new-session".into());
+        runtime.error = Some("Windows could not update the hosts file".into());
+        storage::atomic_write(&dir.path().join("runtime.json"), &runtime).unwrap();
+        assert_eq!(
+            wait_for_session(dir.path(), "new-session", std::time::Duration::ZERO).unwrap_err(),
+            "Windows could not update the hosts file"
+        );
+        runtime.error = None;
+        storage::atomic_write(&dir.path().join("runtime.json"), &runtime).unwrap();
+        wait_for_session(dir.path(), "new-session", std::time::Duration::ZERO).unwrap();
+        runtime.heartbeat -= 60;
+        storage::atomic_write(&dir.path().join("runtime.json"), &runtime).unwrap();
+        assert!(wait_for_session(dir.path(), "new-session", std::time::Duration::ZERO).is_err());
+    }
     #[test]
     fn native_session_starts_only_after_engine_heartbeat() {
         let dir = tempfile::tempdir().unwrap();

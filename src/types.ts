@@ -48,6 +48,13 @@ export type Snapshot = {
   runtime: Runtime;
   platform: string;
   safari?: { error: string | null };
+  browser?: {
+    prepared: boolean;
+    connected: boolean;
+    count: number;
+    error: string | null;
+    extension_path: string;
+  };
 };
 export type Page =
   "Overview" | "Block lists" | "Schedules" | "Insights" | "Settings";

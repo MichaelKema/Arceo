@@ -1,6 +1,6 @@
 [package]
 name = "arceo"
-version = "0.1.0"
+version = "0.1.1"
 description = "Your space to focus. Website and app blocker for macOS and Windows."
 authors = ["Arceo"]
 edition = "2021"

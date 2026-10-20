@@ -1,7 +1,7 @@
 {
   "name": "arceo",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
@@ -9,8 +9,8 @@
     "preview": "vite preview --host 127.0.0.1",
     "tauri": "tauri",
     "test": "vitest run",
-    "format": "prettier --write src vite.config.ts tsconfig.json package.json src-tauri/tauri.conf.json src-tauri/capabilities/default.json README.md .github/workflows docs scripts",
-    "format:check": "prettier --check src vite.config.ts tsconfig.json package.json src-tauri/tauri.conf.json src-tauri/capabilities/default.json README.md .github/workflows docs scripts",
+    "format": "prettier --write src vite.config.ts tsconfig.json package.json src-tauri/tauri.conf.json src-tauri/capabilities/default.json README.md .github/workflows docs scripts browser-extension",
+    "format:check": "prettier --check src vite.config.ts tsconfig.json package.json src-tauri/tauri.conf.json src-tauri/capabilities/default.json README.md .github/workflows docs scripts browser-extension",
     "verify:offline": "node scripts/verify-offline.mjs",
     "verify:engine-offline": "python3 scripts/verify-engine-offline.py",
     "bundle:mac": "tauri build --bundles dmg",
@@ -35,6 +35,7 @@
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^6.1.2",
     "jsdom": "^30.1.3",
+    "playwright": "^1.64.1",
     "prettier": "^3.9.10",
     "typescript": "~5.7.2",
     "vite": "^8.3.4",
