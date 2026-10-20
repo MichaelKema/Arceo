@@ -1,0 +1,81 @@
+{
+  "groups": [
+    {
+      "id": "social",
+      "name": "Social media",
+      "description": "Less scrolling. More living.",
+      "color": "purple",
+      "icon": "social",
+      "domains": [
+        "instagram.com",
+        "facebook.com",
+        "x.com",
+        "twitter.com",
+        "tiktok.com",
+        "threads.net",
+        "snapchat.com",
+        "reddit.com",
+        "pinterest.com",
+        "linkedin.com"
+      ],
+      "apps": []
+    },
+    {
+      "id": "games",
+      "name": "Gaming",
+      "description": "Save the next level for later.",
+      "color": "coral",
+      "icon": "games",
+      "domains": [
+        "store.steampowered.com",
+        "steamcommunity.com",
+        "epicgames.com",
+        "roblox.com",
+        "twitch.tv",
+        "chess.com",
+        "battle.net"
+      ],
+      "apps": []
+    },
+    {
+      "id": "entertainment",
+      "name": "Entertainment",
+      "description": "Put the autoplay on pause.",
+      "color": "blue",
+      "icon": "entertainment",
+      "domains": [
+        "youtube.com",
+        "netflix.com",
+        "hulu.com",
+        "disneyplus.com",
+        "primevideo.com",
+        "max.com",
+        "dailymotion.com"
+      ],
+      "apps": []
+    },
+    {
+      "id": "shopping",
+      "name": "Shopping",
+      "description": "Your cart can wait.",
+      "color": "mint",
+      "icon": "shopping",
+      "domains": [
+        "amazon.com",
+        "ebay.com",
+        "etsy.com",
+        "aliexpress.com",
+        "temu.com",
+        "shein.com"
+      ],
+      "apps": []
+    }
+  ],
+  "schedules": [],
+  "sessions": [],
+  "active_session": null,
+  "engine_enabled": false,
+  "safari_protection": false,
+  "daily_goal": 120,
+  "user_name": "there"
+}

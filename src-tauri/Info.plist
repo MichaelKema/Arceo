@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict><key>NSAppleEventsUsageDescription</key><string>Arceo checks Safari tab addresses locally and replaces blocked websites with an offline focus page during your timers and schedules. Browsing addresses are never saved or shared.</string></dict></plist>
