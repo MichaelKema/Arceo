@@ -26,7 +26,12 @@ export function sessionRules(domains) {
       id: rules.length + 1,
       priority: 1,
       action: { type: "block" },
-      condition: { requestDomains: domains.slice(offset, offset + 1000) },
+      // Omitting both resource-type fields excludes main-frame navigations.
+      // An explicit empty exclusion list blocks every type, including pages.
+      condition: {
+        requestDomains: domains.slice(offset, offset + 1000),
+        excludedResourceTypes: [],
+      },
     });
   }
   return rules;

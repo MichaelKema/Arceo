@@ -25,7 +25,10 @@ describe("Chrome website policy", () => {
         id: 1,
         priority: 1,
         action: { type: "block" },
-        condition: { requestDomains: ["x.com", "twitter.com"] },
+        condition: {
+          requestDomains: ["x.com", "twitter.com"],
+          excludedResourceTypes: [],
+        },
       },
     ]);
     expect(sessionRules([])).toEqual([]);
