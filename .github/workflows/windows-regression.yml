@@ -1,0 +1,24 @@
+name: Verify Windows website blocking in Chrome
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  chrome:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+      - run: npm ci
+      - run: npm run build
+      - run: cargo build --manifest-path src-tauri/Cargo.toml --release --locked --target x86_64-pc-windows-msvc
+      - name: Verify actual Windows resolver and fresh and already-open Chrome
+        run: node scripts/verify-windows-blocking.mjs src-tauri/target/x86_64-pc-windows-msvc/release/arceo.exe

@@ -59,19 +59,16 @@ pub fn run(dir: PathBuf) -> Result<(), String> {
     })
     .map_err(|e| e.to_string())?;
     let mut system = System::new();
-    let mut last_domains: Option<BTreeSet<String>> = None;
     let mut failures = 0;
     while !stopping.load(std::sync::atomic::Ordering::SeqCst) {
         let mut runtime = Runtime {
             online: true,
             heartbeat: Utc::now().timestamp(),
+            engine_version: env!("CARGO_PKG_VERSION").into(),
             ..Runtime::default()
         };
         let config: Config = match storage::read_config(&dir) {
             Ok(config) => {
-                if failures >= 5 {
-                    last_domains = None;
-                }
                 failures = 0;
                 config
             }
@@ -109,11 +106,11 @@ pub fn run(dir: PathBuf) -> Result<(), String> {
                 );
             }
         }
-        if last_domains.as_ref() != Some(&domains) {
-            match hosts::apply(&hosts_path(), &domains) {
-                Ok(()) => last_domains = Some(domains.clone()),
-                Err(error) => runtime.error = Some(error),
-            }
+        // Reconcile every tick: antivirus, VPN tools, and other hosts editors
+        // can remove rules after the initial successful write. apply is a no-op
+        // when the file still matches, and never flushes unchanged rules.
+        if let Err(error) = hosts::apply(&hosts_path(), &domains) {
+            runtime.error = Some(error);
         }
         // Exact executable / application bundle matching. Never kill by a substring or a display name.
         if !apps.is_empty() {
@@ -160,6 +157,17 @@ pub fn run(dir: PathBuf) -> Result<(), String> {
             0
         };
         runtime.blocked_apps = apps.len();
+        if runtime.error.is_none() {
+            runtime.applied_session_id = config
+                .active_session
+                .as_ref()
+                .filter(|s| {
+                    s.started_at <= now.timestamp()
+                        && s.ends_at > now.timestamp()
+                        && s.ended_at.is_none()
+                })
+                .map(|s| s.id.clone());
+        }
         runtime.active_schedule_ids = config
             .schedules
             .iter()

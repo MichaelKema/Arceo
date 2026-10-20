@@ -58,7 +58,30 @@ async fn enable_engine(store: State<'_, Store>) -> Result<(), String> {
     }
     let runtime = storage::read_runtime(&dir);
     if runtime.online {
-        return runtime.error.map_or(Ok(()), Err);
+        if runtime.engine_version == env!("CARGO_PKG_VERSION") {
+            return runtime.error.map_or(Ok(()), Err);
+        }
+        // An upgraded UI must replace the old helper before relying on its
+        // policy acknowledgement protocol. Let it remove its rules normally.
+        {
+            let mut config = store.config.lock().map_err(|e| e.to_string())?;
+            config.engine_enabled = false;
+            storage::atomic_write(&dir.join("config.json"), &*config)?;
+        }
+        let old_dir = dir.clone();
+        tauri::async_runtime::spawn_blocking(move || {
+            let deadline = std::time::Instant::now() + std::time::Duration::from_secs(15);
+            while storage::read_runtime(&old_dir).online {
+                if std::time::Instant::now() >= deadline {
+                    return Err("The previous blocking engine could not stop. Disable it in Settings before updating.".to_string());
+                }
+                std::thread::sleep(std::time::Duration::from_millis(100));
+            }
+            Ok(())
+        }).await.map_err(|e| e.to_string())??;
+        let mut config = store.config.lock().map_err(|e| e.to_string())?;
+        config.engine_enabled = true;
+        storage::atomic_write(&dir.join("config.json"), &*config)?;
     }
     let launch_dir = dir.clone();
     let result = async {
@@ -139,6 +162,7 @@ async fn start_session(
     name: String,
     store: State<'_, Store>,
 ) -> Result<Config, String> {
+    enable_engine(store.clone()).await?;
     let safari_enabled = store
         .config
         .lock()
@@ -150,7 +174,50 @@ async fn start_session(
             .map_err(|e| e.to_string())??;
         store.safari.clear();
     }
-    begin_focus_session(duration, group_ids, name, &store)
+    let started = begin_focus_session(duration, group_ids, name, &store)?;
+    let session_id = started.active_session.as_ref().unwrap().id.clone();
+    let dir = store.dir.clone();
+    let expected_id = session_id.clone();
+    let ready = tauri::async_runtime::spawn_blocking(move || {
+        wait_for_session(&dir, &expected_id, std::time::Duration::from_secs(15))
+    })
+    .await
+    .map_err(|e| e.to_string())?;
+    if let Err(error) = ready {
+        let mut config = store.config.lock().map_err(|e| e.to_string())?;
+        if config
+            .active_session
+            .as_ref()
+            .is_some_and(|s| s.id == session_id)
+        {
+            config.active_session = None;
+            storage::atomic_write(&store.dir.join("config.json"), &*config)?;
+        }
+        return Err(format!(
+            "Website blocking was not confirmed. No session was started. {error}"
+        ));
+    }
+    Ok(store.config.lock().map_err(|e| e.to_string())?.clone())
+}
+fn wait_for_session(
+    dir: &Path,
+    session_id: &str,
+    timeout: std::time::Duration,
+) -> Result<(), String> {
+    let deadline = std::time::Instant::now() + timeout;
+    loop {
+        let runtime = storage::read_runtime(dir);
+        if let Some(error) = runtime.error {
+            return Err(error);
+        }
+        if runtime.online && runtime.applied_session_id.as_deref() == Some(session_id) {
+            return Ok(());
+        }
+        if std::time::Instant::now() >= deadline {
+            return Err("The local engine did not acknowledge the session's rules. Retry enabling it in Settings.".into());
+        }
+        std::thread::sleep(std::time::Duration::from_millis(100));
+    }
 }
 fn begin_focus_session(
     duration: u32,
@@ -176,7 +243,10 @@ fn begin_focus_session(
     let now = chrono::Utc::now().timestamp();
     let mut updated = config.clone();
     updated.active_session = Some(Session {
-        id: format!("session-{now}"),
+        id: format!(
+            "session-{now}-{}",
+            chrono::Utc::now().timestamp_subsec_nanos()
+        ),
         name,
         group_ids,
         started_at: now,

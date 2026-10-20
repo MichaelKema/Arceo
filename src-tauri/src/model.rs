@@ -63,6 +63,10 @@ pub struct Runtime {
     pub blocked_apps: usize,
     pub active_schedule_ids: Vec<String>,
     pub error: Option<String>,
+    #[serde(default)]
+    pub engine_version: String,
+    #[serde(default)]
+    pub applied_session_id: Option<String>,
 }
 
 pub fn normalize_domain(input: &str) -> Result<String, String> {
