@@ -22,16 +22,20 @@ export function sessionRules(domains) {
     throw new Error("Invalid Arceo website rules");
   const rules = [];
   for (let offset = 0; offset < domains.length; offset += 1000) {
+    const requestDomains = domains.slice(offset, offset + 1000);
+    // Chrome's default resource types exclude page navigations. Use a dedicated
+    // main-frame rule plus its default rule for all other resource types.
     rules.push({
       id: rules.length + 1,
       priority: 1,
       action: { type: "block" },
-      // Omitting both resource-type fields excludes main-frame navigations.
-      // An explicit empty exclusion list blocks every type, including pages.
-      condition: {
-        requestDomains: domains.slice(offset, offset + 1000),
-        excludedResourceTypes: [],
-      },
+      condition: { requestDomains, resourceTypes: ["main_frame"] },
+    });
+    rules.push({
+      id: rules.length + 1,
+      priority: 1,
+      action: { type: "block" },
+      condition: { requestDomains },
     });
   }
   return rules;

@@ -20,17 +20,18 @@ describe("Chrome website policy", () => {
       expect(blockedHost(url, ["x.com"])).toBeNull();
   });
   it("blocks requests through the browser with session rules and removes all rules at expiry", () => {
-    expect(sessionRules(["x.com", "twitter.com"])).toEqual([
-      {
-        id: 1,
-        priority: 1,
-        action: { type: "block" },
-        condition: {
-          requestDomains: ["x.com", "twitter.com"],
-          excludedResourceTypes: [],
-        },
-      },
-    ]);
+    const rules = sessionRules(["x.com", "twitter.com"]);
+    expect(rules).toHaveLength(2);
+    expect(rules[0].condition.resourceTypes).toEqual(["main_frame"]);
+    expect(rules[1].condition.resourceTypes).toBeUndefined();
+    expect(rules.map((rule) => rule.id)).toEqual([1, 2]);
+    expect(
+      rules.every(
+        (rule) =>
+          rule.action.type === "block" &&
+          rule.condition.requestDomains.includes("x.com"),
+      ),
+    ).toBe(true);
     expect(sessionRules([])).toEqual([]);
     expect(() => sessionRules(["https://x.com"])).toThrow();
   });

@@ -9,7 +9,12 @@ let retry;
 let queue = Promise.resolve();
 let installed = "";
 async function guardTab(tab) {
-  if (!tab.id || !blockedHost(tab.url, domains)) return;
+  if (
+    typeof tab.id !== "number" ||
+    tab.id < 0 ||
+    !blockedHost(tab.url, domains)
+  )
+    return;
   const current = await chrome.tabs.get(tab.id).catch(() => null);
   if (!current || current.url !== tab.url) return;
   const host = blockedHost(current.url, domains);

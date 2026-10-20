@@ -41,12 +41,15 @@ jobs:
         run: npm run tauri build -- --bundles nsis
       - name: Verify bundled offline assets
         run: npm run verify:offline
-      - name: Verify Windows browser protection
+      - name: Install test browser
         if: runner.os == 'Windows'
-        run: |
-          npx playwright install --no-shell chromium
-          node scripts/verify-windows-blocking.mjs src-tauri/target/release/arceo.exe
-          node scripts/verify-browser-protection.mjs src-tauri/target/release/arceo.exe
+        run: npx playwright install --no-shell chromium
+      - name: Verify Windows system rules
+        if: runner.os == 'Windows'
+        run: node scripts/verify-windows-blocking.mjs src-tauri/target/release/arceo.exe
+      - name: Verify real Chrome protection
+        if: runner.os == 'Windows'
+        run: node scripts/verify-browser-protection.mjs src-tauri/target/release/arceo.exe
       - uses: actions/upload-artifact@v4
         with:
           name: arceo-${{ runner.os }}

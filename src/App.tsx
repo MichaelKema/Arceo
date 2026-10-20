@@ -1732,7 +1732,7 @@ export default function App() {
           )}
           {native &&
             data.platform === "windows" &&
-            !data.browser?.connected && (
+            (!data.browser?.connected || !!data.browser.error) && (
               <div className="inline-note">
                 <Globe size={16} />
                 <div>

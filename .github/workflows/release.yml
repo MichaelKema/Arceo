@@ -58,11 +58,12 @@ jobs:
       - name: Install test browser
         if: runner.os == 'Windows'
         run: npx playwright install --no-shell chromium
-      - name: Verify Windows system rules and real Chrome protection
+      - name: Verify Windows system rules
         if: runner.os == 'Windows'
-        run: |
-          node scripts/verify-windows-blocking.mjs src-tauri/target/${{ matrix.target }}/release/arceo.exe
-          node scripts/verify-browser-protection.mjs src-tauri/target/${{ matrix.target }}/release/arceo.exe
+        run: node scripts/verify-windows-blocking.mjs src-tauri/target/${{ matrix.target }}/release/arceo.exe
+      - name: Verify real Chrome protection
+        if: runner.os == 'Windows'
+        run: node scripts/verify-browser-protection.mjs src-tauri/target/${{ matrix.target }}/release/arceo.exe
       - uses: actions/upload-artifact@v4
         with:
           name: installer-${{ matrix.target }}

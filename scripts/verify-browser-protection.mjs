@@ -44,7 +44,26 @@ const setup = JSON.parse(
     windowsHide: true,
   }),
 );
-const fixture = createServer((_request, response) => {
+for (const file of [
+  "manifest.json",
+  "background.js",
+  "policy.js",
+  "blocked.html",
+  "blocked.js",
+  "style.css",
+  "popup.html",
+  "popup.js",
+]) {
+  assert(
+    (await readFile(join(setup.extension_path, file))).equals(
+      await readFile(new URL(`../browser-extension/${file}`, import.meta.url)),
+    ),
+    `Compiled app has a stale embedded browser asset: ${file}`,
+  );
+}
+const received = [];
+const fixture = createServer((request, response) => {
+  received.push(request.url);
   response.writeHead(200, {
     "Content-Type": "text/html",
     "Cache-Control": "no-store",
@@ -119,11 +138,24 @@ try {
   for (const host of ["blocked.test", "foo.blocked.test", "x.com"]) {
     const tab = await context.newPage();
     let failure = "";
+    const route = `/new-${host}`;
     await tab
-      .goto(`http://${host}:${port}/new`, { timeout: 15_000 })
+      .goto(`http://${host}:${port}${route}`, { timeout: 15_000 })
       .catch((error) => {
         failure = error.message;
       });
+    assert(
+      !received.includes(route),
+      `${host} reached the local server despite browser-level blocking; rules=${JSON.stringify(await rules())}`,
+    );
+    await until(
+      () =>
+        failure.includes("ERR_BLOCKED_BY_CLIENT") ||
+        failure.includes("ERR_ABORTED") ||
+        tab.url().includes("/blocked.html"),
+      `${host} did not show a blocked navigation`,
+      3000,
+    );
     assert(
       failure.includes("ERR_BLOCKED_BY_CLIENT") ||
         failure.includes("ERR_ABORTED") ||
@@ -175,6 +207,46 @@ try {
   );
   console.log(
     "PASS: local schedules and disabling enforcement synchronize with the browser",
+  );
+  config.engine_enabled = true;
+  await save();
+  await until(
+    async () => (await rules()).length > 0,
+    "Browser rules did not resume",
+  );
+  const manifestPath = join(dir, "browser-host.json");
+  const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+  manifest.path = join(temp, "missing-host.exe");
+  await writeFile(manifestPath, JSON.stringify(manifest));
+  const id = (
+    await readFile(
+      new URL("../browser-extension/extension-id.txt", import.meta.url),
+      "utf8",
+    )
+  ).trim();
+  const query = `Get-CimInstance Win32_Process -Filter "Name = 'arceo.exe'" | Where-Object { $_.ExecutablePath -eq '${binary.replaceAll("'", "''")}' -and $_.CommandLine -like '*chrome-extension://${id}/*' } | Select-Object -ExpandProperty ProcessId | ConvertTo-Json -Compress`;
+  const pids = [
+    JSON.parse(
+      execFileSync(
+        "powershell.exe",
+        ["-NoProfile", "-NonInteractive", "-Command", query],
+        { encoding: "utf8", windowsHide: true },
+      ),
+    ),
+  ].flat();
+  assert(pids.length > 0, "The fixture's native host process was not found");
+  for (const pid of pids)
+    execFileSync("taskkill", ["/PID", String(pid), "/F"], {
+      stdio: "ignore",
+      windowsHide: true,
+    });
+  await until(
+    async () => (await rules()).length === 0,
+    "Disconnected native host left browser rules behind",
+    7000,
+  );
+  console.log(
+    "PASS: losing the native host releases browser rules instead of leaving a permanent block",
   );
   // The profile uses only bundled scripts and native IPC. Native status contains
   // counts and errors, never browsing URLs or page contents.
